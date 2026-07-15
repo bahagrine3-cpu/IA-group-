@@ -1,544 +1,481 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>أسطورة الطريق - سباق جزائري 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Locked Out of Heaven — Rhythm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --green:#0b6e3e;
-    --green-dark:#053f22;
-    --red:#d21034;
-    --sand:#e7b56c;
-    --ink:#0e1512;
-    --cream:#f4ecd8;
-    --gold:#e8b94a;
+    --bg-deep:#0e0d22;
+    --bg-mid:#1a1840;
+    --gold:#f6c453;
+    --violet:#8c6bff;
+    --ember:#e94560;
+    --mist:#eae6ff;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  *{box-sizing:border-box;}
   html,body{
-    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
-    background:var(--ink);
-    font-family:"Segoe UI","Tahoma",Arial,sans-serif;
-    color:var(--cream);
-    touch-action:none;
+    margin:0;padding:0;height:100%;
+    background:radial-gradient(ellipse at 50% 10%, var(--bg-mid), var(--bg-deep) 75%);
+    font-family:'Poppins',sans-serif;
+    color:var(--mist);
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color: transparent;
     user-select:none;
   }
-  #gameCanvas{position:fixed; inset:0; width:100vw; height:100vh; display:block;}
+  .stage{
+    position:relative;
+    width:100%;
+    max-width:900px;
+    aspect-ratio:16/9;
+    margin:auto;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 0 0 1px rgba(140,107,255,0.25), 0 30px 80px rgba(0,0,0,0.6);
+  }
+  canvas{ display:block; width:100%; height:100%; }
+
+  .hud{
+    position:absolute;top:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:14px 20px;
+    pointer-events:none;
+    font-family:'Poppins',sans-serif;
+  }
+  .hud .col{ display:flex; flex-direction:column; gap:2px; }
+  .hud .label{ font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:rgba(234,230,255,.5); }
+  .hud .value{ font-family:'Cinzel',serif; font-weight:700; font-size:20px; color:var(--gold); text-shadow:0 0 10px rgba(246,196,83,.4); }
+  .hud .value.miss{ color:var(--ember); text-shadow:0 0 10px rgba(233,69,96,.4); }
+  .hud .right{ align-items:flex-end; }
+
+  .mute-btn{
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    pointer-events:auto;
+    background:rgba(20,18,45,0.55);
+    border:1px solid rgba(140,107,255,0.4);
+    color:var(--mist);
+    width:34px;height:34px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(6px);
+  }
+
+  .combo{
+    position:absolute; left:50%; top:60%; transform:translate(-50%,-50%);
+    font-family:'Cinzel',serif; font-weight:800; font-size:34px;
+    color:var(--gold); text-shadow:0 0 20px rgba(246,196,83,.5);
+    opacity:0; pointer-events:none; transition:opacity .1s ease;
+  }
 
   .overlay{
-    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    flex-direction:column; text-align:center; z-index:20;
-    background:radial-gradient(circle at 50% 30%, rgba(11,110,62,.35), rgba(5,10,8,.92) 70%);
-    padding:20px;
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+    background:linear-gradient(180deg, rgba(14,13,34,0.2), rgba(14,13,34,0.85) 65%);
+    gap:12px; padding:24px;
+    transition:opacity .3s ease;
   }
-  .hidden{display:none !important;}
+  .overlay.hidden{ opacity:0; pointer-events:none; }
+  .eyebrow{ font-size:12px; letter-spacing:.35em; text-transform:uppercase; color:var(--violet); font-weight:600; }
+  h1.title{
+    font-family:'Cinzel',serif; font-weight:800;
+    font-size:clamp(26px,6vw,46px); margin:0 0 4px;
+    background:linear-gradient(180deg,#fff6da,var(--gold) 55%,#b8863a);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 40px rgba(246,196,83,0.2); line-height:1.05;
+  }
+  .subtitle{ font-size:13px; color:rgba(234,230,255,.7); max-width:420px; line-height:1.6; }
 
-  .badge{
-    display:inline-flex; gap:6px; align-items:center; padding:4px 14px;
-    border-radius:999px; background:linear-gradient(90deg,var(--green),var(--red));
-    font-size:12px; letter-spacing:2px; margin-bottom:14px; font-weight:700;
+  .levels{ display:flex; gap:16px; margin-top:10px; flex-wrap:wrap; justify-content:center; }
+  .level-card{
+    width:150px; padding:16px 12px; border-radius:14px;
+    background:rgba(28,25,60,.55); border:1px solid rgba(140,107,255,.35);
+    cursor:pointer; transition:transform .15s ease, border-color .15s ease;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
   }
-  h1{
-    font-size:clamp(28px,7vw,52px); margin:0 0 6px; font-weight:900;
-    color:var(--cream);
-    text-shadow:0 0 18px rgba(232,185,74,.5), 0 4px 0 rgba(0,0,0,.4);
-    letter-spacing:1px;
-  }
-  .subtitle{
-    color:var(--gold); font-size:clamp(14px,3vw,18px); margin-bottom:26px; opacity:.9;
-  }
-  .instructions{
-    background:rgba(244,236,216,.06); border:1px solid rgba(232,185,74,.3);
-    border-radius:14px; padding:14px 20px; margin-bottom:26px; font-size:14px; line-height:1.9; max-width:320px;
-  }
-  .btn{
-    border:none; cursor:pointer; padding:16px 46px; font-size:19px; font-weight:900;
-    border-radius:999px; background:linear-gradient(90deg,var(--red),#f0475f);
-    color:#fff; box-shadow:0 10px 25px rgba(210,16,52,.45);
-    letter-spacing:1px; transition:transform .15s ease;
-  }
-  .btn:active{transform:scale(.94);}
-  .btn.secondary{
-    background:linear-gradient(90deg,var(--green),#12a35c);
-    box-shadow:0 10px 25px rgba(11,110,62,.45);
-  }
+  .level-card:hover{ transform:translateY(-4px); border-color:var(--gold); }
+  .level-card .num{ font-family:'Cinzel',serif; font-weight:700; font-size:26px; color:var(--gold); }
+  .level-card .name{ font-size:12px; color:rgba(234,230,255,.75); }
+  .level-card .stars{ font-size:14px; letter-spacing:2px; color:var(--gold); min-height:16px; }
+  .level-card .stars .dim{ color:rgba(234,230,255,.25); }
 
-  #hud{
-    position:fixed; top:0; left:0; right:0; z-index:10; display:flex;
-    justify-content:space-between; padding:16px 18px; pointer-events:none;
+  .cta{
+    margin-top:6px; font-family:'Cinzel',serif; font-weight:700; font-size:16px; color:#1a1730;
+    background:linear-gradient(180deg,#ffe9ad,var(--gold)); border:none;
+    padding:12px 32px; border-radius:999px; cursor:pointer; letter-spacing:.05em;
+    box-shadow:0 10px 30px rgba(246,196,83,.35); transition:transform .15s ease;
   }
-  .hud-pill{
-    background:rgba(14,21,18,.55); border:1px solid rgba(232,185,74,.35);
-    backdrop-filter:blur(6px); border-radius:14px; padding:8px 16px; text-align:center;
+  .cta:hover{ transform:translateY(-2px); }
+  .cta.ghost{
+    background:transparent; color:var(--mist); border:1px solid rgba(234,230,255,.35);
+    box-shadow:none;
   }
-  .hud-pill .label{font-size:10px; letter-spacing:2px; color:var(--gold); opacity:.85;}
-  .hud-pill .value{font-size:22px; font-weight:900;}
-
-  #speedWrap{
-    position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:10;
-    text-align:center; pointer-events:none;
-  }
-  #speedBarOuter{
-    width:150px; height:8px; border-radius:6px; background:rgba(244,236,216,.15);
-    overflow:hidden; margin-top:4px;
-  }
-  #speedBarInner{
-    height:100%; width:0%; background:linear-gradient(90deg,var(--green),var(--gold),var(--red));
-    transition:width .1s linear;
-  }
-
-  #idleWrap{
-    position:fixed; top:78px; left:50%; transform:translateX(-50%); z-index:10;
-    text-align:center; pointer-events:none; width:220px;
-  }
-  #idleWrap .label{font-size:11px; letter-spacing:2px; color:var(--gold); opacity:.9;}
-  #idleBarOuter{
-    width:100%; height:10px; border-radius:6px; background:rgba(244,236,216,.15);
-    overflow:hidden; margin-top:4px; border:1px solid rgba(232,185,74,.35);
-  }
-  #idleBarInner{
-    height:100%; width:100%; background:linear-gradient(90deg,var(--green),var(--gold));
-    transition:width .08s linear, background .2s linear;
-  }
-  #idleWrap.danger #idleBarInner{background:var(--red);}
-  #idleWrap.danger .label{color:#ff8080; animation:pulse .5s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
-
-  #controls{
-    position:fixed; bottom:24px; left:0; right:0; display:flex; justify-content:space-between;
-    padding:0 22px; z-index:10;
-  }
-  .ctrl-btn{
-    width:76px; height:76px; border-radius:50%; border:2px solid rgba(232,185,74,.5);
-    background:rgba(14,21,18,.55); backdrop-filter:blur(4px); color:var(--cream);
-    font-size:30px; display:flex; align-items:center; justify-content:center;
-  }
-  .ctrl-btn:active{background:rgba(232,185,74,.35);}
-
-  #flash{
-    position:fixed; inset:0; background:var(--red); opacity:0; pointer-events:none; z-index:15;
-    transition:opacity .12s ease;
-  }
-  #flash.on{opacity:.55;}
-
-  .final-score{font-size:56px; font-weight:900; color:var(--gold); margin:6px 0 2px; text-shadow:0 0 20px rgba(232,185,74,.5);}
-  .best-line{font-size:14px; opacity:.85; margin-bottom:28px;}
+  .hint{ margin-top:2px; font-size:11px; color:rgba(234,230,255,.45); }
+  .results-row{ display:flex; gap:26px; margin-top:6px; }
+  .results-row .r{ text-align:center; }
+  .results-row .r .v{ font-family:'Cinzel',serif; font-weight:700; font-size:22px; color:var(--gold); }
+  .results-row .r .l{ font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:rgba(234,230,255,.55); }
+  .stars-big{ font-size:30px; letter-spacing:6px; color:var(--gold); margin-top:6px; }
+  .stars-big .dim{ color:rgba(234,230,255,.2); }
+  .btn-row{ display:flex; gap:12px; margin-top:14px; }
+  @media (prefers-reduced-motion: reduce){ * { animation-duration:.001ms !important; } }
 </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
-<div id="flash"></div>
+<div class="stage">
+  <canvas id="game"></canvas>
 
-<div id="hud" class="hidden">
-  <div class="hud-pill">
-    <div class="label">النقاط</div>
-    <div class="value" id="scoreVal">0</div>
+  <div class="hud" id="hud" style="display:none">
+    <div class="col">
+      <span class="label">Accuracy</span>
+      <span class="value" id="accVal">100%</span>
+    </div>
+    <div class="col right">
+      <span class="label">Misses</span>
+      <span class="value miss" id="missVal">0</span>
+      <span class="label" style="margin-top:6px">Notes</span>
+      <span class="value" id="noteVal">0/0</span>
+    </div>
   </div>
-  <div class="hud-pill">
-    <div class="label">أفضل نتيجة</div>
-    <div class="value" id="bestVal">0</div>
+  <button class="mute-btn" id="muteBtn" style="display:none" aria-label="كتم/تشغيل الصوت">🔊</button>
+  <div class="combo" id="comboEl">COMBO ×0</div>
+
+  <div class="overlay" id="selectOverlay">
+    <div class="eyebrow">اختاري مستوى</div>
+    <h1 class="title">Locked Out<br>of Heaven</h1>
+    <p class="subtitle">اضغطي مسافة أو انقري بالضبط لما تصل النوطة للدائرة المركزية. كل مستوى أسرع وأصعب من اللي قبلو.</p>
+    <div class="levels" id="levelsWrap"></div>
+    <div class="hint">Space / نقرة = ضربة على الإيقاع</div>
+  </div>
+
+  <div class="overlay hidden" id="resultsOverlay">
+    <div class="eyebrow" id="resultsEyebrow">المستوى الأول</div>
+    <h1 class="title" id="resultsTitle" style="font-size:clamp(24px,5vw,38px)">أُنجز</h1>
+    <div class="results-row">
+      <div class="r"><div class="v" id="rAcc">100%</div><div class="l">Accuracy</div></div>
+      <div class="r"><div class="v" id="rMiss">0</div><div class="l">Misses</div></div>
+      <div class="r"><div class="v" id="rScore">0</div><div class="l">Score</div></div>
+    </div>
+    <div class="stars-big" id="rStars">★★★</div>
+    <div class="btn-row">
+      <button class="cta ghost" id="backBtn">المستويات</button>
+      <button class="cta" id="nextBtn">المستوى التالي</button>
+    </div>
   </div>
 </div>
 
-<div id="speedWrap" class="hidden">
-  <div style="font-size:11px;letter-spacing:2px;color:var(--gold);">السرعة</div>
-  <div id="speedBarOuter"><div id="speedBarInner"></div></div>
-</div>
-
-<div id="controls" class="hidden">
-  <button class="ctrl-btn" id="btnRight">➡</button>
-  <button class="ctrl-btn" id="btnLeft">⬅</button>
-</div>
-
-<div id="idleWrap" class="hidden">
-  <div class="label">اضغط زر قبل ما ينتهي الوقت!</div>
-  <div id="idleBarOuter"><div id="idleBarInner"></div></div>
-</div>
-
-<div id="startScreen" class="overlay">
-  <div class="badge">🇩🇿 ALGERIAN LEGEND RACE</div>
-  <h1>أسطورة الطريق</h1>
-  <div class="subtitle">سباق سيارات ثلاثي الأبعاد — على طريق جزائري صحراوي أسطوري</div>
-  <div class="instructions">
-    ⬅️ ➡️ أو أزرار الشاشة: بدّل الخط<br>
-    تفادى السيارات وكثّر النقاط<br>
-    ⚠️ خاصك تضغط زر كل 4 ثواني وإلا تخسر!<br>
-    كل ما تبعد، السرعة تزيد!
-  </div>
-  <button class="btn" id="startBtn">ابدأ السباق 🏁</button>
-</div>
-
-<div id="gameOverScreen" class="overlay hidden">
-  <div class="badge" style="background:linear-gradient(90deg,var(--red),#7a0e1f)">💥 تصادم</div>
-  <div class="final-score" id="finalScore">0</div>
-  <div class="best-line" id="bestLine">أفضل نتيجة: 0</div>
-  <button class="btn secondary" id="restartBtn">حاول مرة أخرى 🔁</button>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-"use strict";
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const hud = document.getElementById('hud');
+  const accVal = document.getElementById('accVal');
+  const missVal = document.getElementById('missVal');
+  const noteVal = document.getElementById('noteVal');
+  const muteBtn = document.getElementById('muteBtn');
+  const comboEl = document.getElementById('comboEl');
+  const selectOverlay = document.getElementById('selectOverlay');
+  const resultsOverlay = document.getElementById('resultsOverlay');
+  const levelsWrap = document.getElementById('levelsWrap');
+  const resultsEyebrow = document.getElementById('resultsEyebrow');
+  const resultsTitle = document.getElementById('resultsTitle');
+  const rAcc = document.getElementById('rAcc');
+  const rMiss = document.getElementById('rMiss');
+  const rScore = document.getElementById('rScore');
+  const rStars = document.getElementById('rStars');
+  const backBtn = document.getElementById('backBtn');
+  const nextBtn = document.getElementById('nextBtn');
 
-let scene, camera, renderer, clock;
-let car;
-const lanes = [-3.4, 0, 3.4];
-let laneIndex = 1;
-let carX = 0;
-
-let obstacles = [];
-let decorAll = [];
-const decorSpanStart = -20;
-const decorSpan = 340;
-const decorStep = 22;
-
-let roadTexture;
-let running = false;
-let distance = 0;
-let score = 0;
-let best = 0;
-const IDLE_LIMIT = 4;
-let idleTimer = IDLE_LIMIT;
-const baseSpeed = 0.28;
-const maxSpeed = 0.95;
-let speed = baseSpeed;
-let spawnTimer = 1.1;
-
-const obstacleColors = [0x1e88e5, 0xffb300, 0x8e24aa, 0x3aa35a, 0xf4511e, 0xdedede];
-
-function createRoadTexture(){
-  const c = document.createElement('canvas');
-  c.width = 128; c.height = 512;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#2b2b2b';
-  ctx.fillRect(0,0,c.width,c.height);
-  ctx.fillStyle = '#f2f2f2';
-  ctx.fillRect(8,0,4,c.height);
-  ctx.fillRect(c.width-12,0,4,c.height);
-  ctx.fillStyle = '#3ddc84';
-  for(let y=0;y<c.height;y+=64){
-    ctx.fillRect(c.width/2-3, y, 6, 34);
+  let W=900,H=506;
+  function resize(){
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    W = rect.width; H = rect.height;
+    canvas.width = W*dpr; canvas.height = H*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
   }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(1, 40);
-  return tex;
-}
+  window.addEventListener('resize', resize);
+  resize();
 
-function createCarMesh(bodyColor, isPlayer){
-  const group = new THREE.Group();
-
-  const bodyMat = new THREE.MeshStandardMaterial({color: bodyColor, roughness:0.35, metalness:0.5});
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.7,0.5,3.5), bodyMat);
-  body.position.y = 0.45;
-  group.add(body);
-
-  const cabinMat = new THREE.MeshStandardMaterial({color:0x111318, roughness:0.2, metalness:0.6});
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.42,1.5), cabinMat);
-  cabin.position.set(0, 0.86, -0.25);
-  group.add(cabin);
-
-  const wheelGeo = new THREE.CylinderGeometry(0.34,0.34,0.32,14);
-  const wheelMat = new THREE.MeshStandardMaterial({color:0x0d0d0d, roughness:0.8});
-  const wheelPositions = [
-    [-0.85, 0.34, 1.15],[0.85, 0.34, 1.15],
-    [-0.85, 0.34, -1.15],[0.85, 0.34, -1.15]
+  // ---------- LEVELS CONFIG ----------
+  const LEVELS = [
+    { name:'الفجر', notes:18, travel:1500, spawnGap:820, minGap:600 },
+    { name:'العاصفة', notes:26, travel:1150, spawnGap:640, minGap:430 },
+    { name:'البوابة', notes:34, travel:900,  spawnGap:500, minGap:330 },
   ];
-  wheelPositions.forEach(p => {
-    const w = new THREE.Mesh(wheelGeo, wheelMat);
-    w.rotation.z = Math.PI/2;
-    w.position.set(p[0], p[1], p[2]);
-    group.add(w);
-  });
+  let bestStars = LEVELS.map(()=>0);
+  let currentLevelIdx = 0;
 
-  const lightMatF = new THREE.MeshStandardMaterial({color:0xfff2b0, emissive:0xffe08a, emissiveIntensity:1.2});
-  const lightMatB = new THREE.MeshStandardMaterial({color:0xff2b2b, emissive:0xff2b2b, emissiveIntensity:1.1});
-  [-0.6,0.6].forEach(x => {
-    const fl = new THREE.Mesh(new THREE.SphereGeometry(0.11,8,8), lightMatF);
-    fl.position.set(x, 0.5, -1.72);
-    group.add(fl);
-    const bl = new THREE.Mesh(new THREE.SphereGeometry(0.10,8,8), lightMatB);
-    bl.position.set(x, 0.55, 1.72);
-    group.add(bl);
-  });
+  // ---------- AUDIO ----------
+  let actx = null, muted = false, musicTimer = null;
+  function initAudio(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); }
+  function tone(freq,dur,type,vol,delay){
+    if(!actx||muted) return;
+    const t0 = actx.currentTime + (delay||0);
+    const osc = actx.createOscillator(), gain = actx.createGain();
+    osc.type = type||'sine';
+    osc.frequency.setValueAtTime(freq,t0);
+    gain.gain.setValueAtTime(0,t0);
+    gain.gain.linearRampToValueAtTime(vol||0.15,t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    osc.connect(gain).connect(actx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.05);
+  }
+  function sfxPerfect(){ tone(1046,0.12,'sine',0.15); tone(1568,0.14,'sine',0.09,0.04); }
+  function sfxGood(){ tone(784,0.12,'sine',0.13); }
+  function sfxMiss(){ tone(180,0.25,'sawtooth',0.14); }
+  const scale=[261.6,329.6,392.0,523.3,392.0,329.6];
+  let noteIdx=0;
+  function musicStep(){ if(!actx||muted) return; const f=scale[noteIdx%scale.length]; tone(f,1.5,'sine',0.045); noteIdx++; }
+  function startMusic(){ if(musicTimer) return; musicStep(); musicTimer=setInterval(musicStep,650); }
+  function stopMusic(){ if(musicTimer){clearInterval(musicTimer); musicTimer=null;} }
+  muteBtn.addEventListener('click', ()=>{ muted=!muted; muteBtn.textContent = muted?'🔇':'🔊'; });
 
-  if(isPlayer){
-    const stripeMat = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.3});
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.35,0.02,3.5), stripeMat);
-    stripe.position.set(0, 0.71, 0);
-    group.add(stripe);
+  // ---------- GAME STATE ----------
+  let state='select'; // select | playing | results
+  let notes=[]; // {angle, spawnT, hitT, resolved, result}
+  let spawnedCount=0, totalToSpawn=0, spawnTimer=0, lastSpawnGap=0;
+  let hits=0, misses=0, accSum=0, score=0, combo=0, maxCombo=0;
+  let bgStars=[];
+  const hitR = ()=> Math.min(W,H)*0.075;
+  const spawnDist = ()=> Math.min(W,H)*0.42;
 
-    const stripeGreen = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.021,3.5), new THREE.MeshStandardMaterial({color:0x0b6e3e}));
-    stripeGreen.position.set(0.28, 0.712, 0);
-    group.add(stripeGreen);
-    const stripeGreen2 = stripeGreen.clone();
-    stripeGreen2.position.x = -0.28;
-    group.add(stripeGreen2);
-
-    const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.5,0.28,0.14), new THREE.MeshStandardMaterial({color:0x111111}));
-    spoiler.position.set(0, 0.95, 1.65);
-    group.add(spoiler);
+  function initBgStars(){
+    bgStars=[];
+    for(let i=0;i<60;i++) bgStars.push({x:Math.random()*W,y:Math.random()*H*0.8,r:Math.random()*1.5+.3,tw:Math.random()*Math.PI*2});
   }
 
-  return group;
-}
-
-function createPalmTree(){
-  const group = new THREE.Group();
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12,0.2,2.4,8),
-    new THREE.MeshStandardMaterial({color:0x8a6642, roughness:0.9})
-  );
-  trunk.position.y = 1.2;
-  group.add(trunk);
-  const leafMat = new THREE.MeshStandardMaterial({color:0x2f8f4e, roughness:0.8});
-  for(let i=0;i<6;i++){
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.2,1.5,4), leafMat);
-    const ang = (Math.PI*2/6)*i;
-    leaf.position.set(Math.cos(ang)*0.55, 2.5, Math.sin(ang)*0.55);
-    leaf.rotation.z = Math.PI/2.3;
-    leaf.rotation.y = ang;
-    group.add(leaf);
-  }
-  return group;
-}
-
-function createFlagPole(){
-  const group = new THREE.Group();
-  const pole = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.06,0.06,2.6,8),
-    new THREE.MeshStandardMaterial({color:0xdddddd, metalness:0.4})
-  );
-  pole.position.y = 1.3;
-  group.add(pole);
-  const flag = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.85,0.5),
-    new THREE.MeshStandardMaterial({color:0x0b6e3e, side:THREE.DoubleSide})
-  );
-  flag.position.set(0.45, 2.25, 0);
-  group.add(flag);
-  const flag2 = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.85,0.16),
-    new THREE.MeshStandardMaterial({color:0xd21034, side:THREE.DoubleSide})
-  );
-  flag2.position.set(0.45, 1.98, 0);
-  group.add(flag2);
-  return group;
-}
-
-function init(){
-  const canvas = document.getElementById('gameCanvas');
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xe8935a);
-  scene.fog = new THREE.Fog(0xe8935a, 40, 170);
-
-  camera = new THREE.PerspectiveCamera(72, window.innerWidth/window.innerHeight, 0.1, 500);
-  camera.position.set(0, 4.4, 9);
-  camera.lookAt(0, 0.6, -25);
-
-  renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  const hemi = new THREE.HemisphereLight(0xfff2d9, 0x3a2a1a, 0.85);
-  scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffddaa, 0.9);
-  sun.position.set(15, 25, 10);
-  scene.add(sun);
-
-  roadTexture = createRoadTexture();
-  const roadMat = new THREE.MeshStandardMaterial({map: roadTexture, roughness:0.95});
-  const road = new THREE.Mesh(new THREE.PlaneGeometry(13, 420), roadMat);
-  road.rotation.x = -Math.PI/2;
-  road.position.set(0, 0, -150);
-  scene.add(road);
-
-  const sandMat = new THREE.MeshStandardMaterial({color:0xd9a55e, roughness:1});
-  const sand = new THREE.Mesh(new THREE.PlaneGeometry(260, 420), sandMat);
-  sand.rotation.x = -Math.PI/2;
-  sand.position.set(0, -0.03, -150);
-  scene.add(sand);
-
-  for(let z = decorSpanStart; z > decorSpanStart - decorSpan; z -= decorStep){
-    const leftD = Math.random() < 0.55 ? createPalmTree() : createFlagPole();
-    leftD.position.set(-7.6 - Math.random()*2.5, 0, z + Math.random()*4);
-    scene.add(leftD);
-    decorAll.push(leftD);
-
-    const rightD = Math.random() < 0.55 ? createPalmTree() : createFlagPole();
-    rightD.position.set(7.6 + Math.random()*2.5, 0, z - Math.random()*4);
-    scene.add(rightD);
-    decorAll.push(rightD);
+  function buildLevelCards(){
+    levelsWrap.innerHTML='';
+    LEVELS.forEach((lv,i)=>{
+      const card=document.createElement('div');
+      card.className='level-card';
+      const starStr = '★'.repeat(bestStars[i]) + '<span class="dim">'+'★'.repeat(3-bestStars[i])+'</span>';
+      card.innerHTML = `<div class="num">${i+1}</div><div class="name">${lv.name}</div><div class="stars">${starStr}</div>`;
+      card.addEventListener('click', ()=> startLevel(i));
+      levelsWrap.appendChild(card);
+    });
   }
 
-  car = createCarMesh(0xd21034, true);
-  car.position.set(0, 0, 0);
-  scene.add(car);
-
-  clock = new THREE.Clock();
-
-  window.addEventListener('resize', onResize);
-  window.addEventListener('keydown', onKeyDown);
-  document.getElementById('btnLeft').addEventListener('pointerdown', () => changeLane(-1));
-  document.getElementById('btnRight').addEventListener('pointerdown', () => changeLane(1));
-  document.getElementById('startBtn').addEventListener('pointerdown', startGame);
-  document.getElementById('restartBtn').addEventListener('pointerdown', startGame);
-}
-
-function onResize(){
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function onKeyDown(e){
-  if(!running) return;
-  if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') changeLane(-1);
-  else if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') changeLane(1);
-}
-
-function changeLane(dir){
-  if(!running) return;
-  laneIndex = Math.max(0, Math.min(2, laneIndex + dir));
-  idleTimer = IDLE_LIMIT;
-}
-
-function spawnObstacle(){
-  const color = obstacleColors[Math.floor(Math.random()*obstacleColors.length)];
-  const oCar = createCarMesh(color, false);
-  const lane = Math.floor(Math.random()*3);
-  oCar.position.set(lanes[lane], 0, -150);
-  scene.add(oCar);
-  obstacles.push(oCar);
-}
-
-function resetGame(){
-  obstacles.forEach(o => scene.remove(o));
-  obstacles = [];
-  laneIndex = 1;
-  carX = 0;
-  car.position.set(0,0,0);
-  car.rotation.z = 0;
-  distance = 0;
-  score = 0;
-  speed = baseSpeed;
-  spawnTimer = 1.1;
-  idleTimer = IDLE_LIMIT;
-}
-
-function startGame(){
-  resetGame();
-  document.getElementById('startScreen').classList.add('hidden');
-  document.getElementById('gameOverScreen').classList.add('hidden');
-  document.getElementById('hud').classList.remove('hidden');
-  document.getElementById('speedWrap').classList.remove('hidden');
-  document.getElementById('controls').classList.remove('hidden');
-  document.getElementById('idleWrap').classList.remove('hidden');
-  running = true;
-}
-
-function endGame(){
-  running = false;
-  best = Math.max(best, score);
-  const flash = document.getElementById('flash');
-  flash.classList.add('on');
-  setTimeout(() => {
-    flash.classList.remove('on');
-    document.getElementById('finalScore').textContent = score;
-    document.getElementById('bestLine').textContent = 'أفضل نتيجة: ' + best;
-    document.getElementById('gameOverScreen').classList.remove('hidden');
-    document.getElementById('hud').classList.add('hidden');
-    document.getElementById('speedWrap').classList.add('hidden');
-    document.getElementById('controls').classList.add('hidden');
-    document.getElementById('idleWrap').classList.add('hidden');
-  }, 260);
-}
-
-function updateHUD(){
-  document.getElementById('scoreVal').textContent = score;
-  document.getElementById('bestVal').textContent = best;
-  const pct = Math.min(100, ((speed - baseSpeed) / (maxSpeed - baseSpeed)) * 100);
-  document.getElementById('speedBarInner').style.width = pct + '%';
-
-  const idleWrap = document.getElementById('idleWrap');
-  const idlePct = Math.max(0, (idleTimer / IDLE_LIMIT) * 100);
-  document.getElementById('idleBarInner').style.width = idlePct + '%';
-  if(idleTimer <= 1.5) idleWrap.classList.add('danger');
-  else idleWrap.classList.remove('danger');
-}
-
-function update(dt){
-  idleTimer -= dt;
-  if(idleTimer <= 0){
-    idleTimer = 0;
-    updateHUD();
-    endGame();
-    return;
+  function startLevel(idx){
+    currentLevelIdx = idx;
+    initAudio();
+    if (actx && actx.state==='suspended') actx.resume();
+    const lv = LEVELS[idx];
+    notes = []; spawnedCount=0; totalToSpawn=lv.notes; spawnTimer=0;
+    hits=0; misses=0; accSum=0; score=0; combo=0; maxCombo=0;
+    updateHud();
+    state='playing';
+    selectOverlay.classList.add('hidden');
+    resultsOverlay.classList.add('hidden');
+    hud.style.display='flex';
+    muteBtn.style.display='flex';
+    startMusic();
   }
 
-  distance += speed * dt * 60;
-  score = Math.floor(distance);
-  speed = Math.min(maxSpeed, baseSpeed + distance * 0.00035);
-
-  const targetX = lanes[laneIndex];
-  carX += (targetX - carX) * Math.min(1, dt * 8);
-  car.position.x = carX;
-  car.rotation.z = (targetX - carX) * -0.14;
-
-  roadTexture.offset.y -= speed * dt * 2;
-
-  for(let i = 0; i < decorAll.length; i++){
-    const d = decorAll[i];
-    d.position.z += speed * dt * 60;
-    if(d.position.z > 15) d.position.z -= decorSpan;
+  function updateHud(){
+    const total = hits+misses;
+    const accPct = total>0 ? Math.round((accSum/total)*100) : 100;
+    accVal.textContent = accPct+'%';
+    missVal.textContent = misses;
+    noteVal.textContent = (hits+misses)+'/'+totalToSpawn;
   }
 
-  spawnTimer -= dt;
-  if(spawnTimer <= 0){
-    spawnObstacle();
-    spawnTimer = Math.max(0.55, 1.3 - distance * 0.0018);
-  }
-
-  for(let i = obstacles.length - 1; i >= 0; i--){
-    const o = obstacles[i];
-    o.position.z += speed * dt * 60;
-    if(o.position.z > 15){
-      scene.remove(o);
-      obstacles.splice(i,1);
-      score += 8;
-      continue;
+  function showCombo(){
+    if (combo>=2){
+      comboEl.textContent = 'COMBO ×'+combo;
+      comboEl.style.opacity='1';
+      clearTimeout(showCombo._t);
+      showCombo._t = setTimeout(()=>{ comboEl.style.opacity='0'; }, 380);
     }
-    if(o.position.z > -2.4 && o.position.z < 2.4){
-      if(Math.abs(o.position.x - car.position.x) < 1.55){
-        endGame();
-        return;
+  }
+
+  function spawnNote(lv){
+    const angle = Math.random()*Math.PI*2;
+    const now = performance.now();
+    notes.push({ angle, spawnT: now, hitT: now+lv.travel, resolved:false });
+    spawnedCount++;
+  }
+
+  function resolveMiss(n){
+    n.resolved = true;
+    misses++; combo=0; accSum += 0;
+    sfxMiss();
+    updateHud();
+    checkLevelEnd();
+  }
+
+  function attemptHit(){
+    if (state!=='playing') return;
+    const now = performance.now();
+    let best=null, bestDiff=Infinity;
+    notes.forEach(n=>{
+      if (n.resolved) return;
+      const diff = Math.abs(now - n.hitT);
+      if (diff < 220 && diff < bestDiff){ bestDiff=diff; best=n; }
+    });
+    if (!best) return;
+    best.resolved = true;
+    hits++;
+    let weight, grade;
+    if (bestDiff<=70){ weight=1; grade='PERFECT'; sfxPerfect(); score+=100; }
+    else { weight=0.65; grade='GOOD'; sfxGood(); score+=60; }
+    accSum += weight;
+    combo++; maxCombo=Math.max(maxCombo,combo);
+    showCombo();
+    updateHud();
+    checkLevelEnd();
+  }
+
+  function checkLevelEnd(){
+    if (spawnedCount>=totalToSpawn && notes.every(n=>n.resolved)){
+      finishLevel();
+    }
+  }
+
+  function finishLevel(){
+    state='results';
+    stopMusic();
+    hud.style.display='none';
+    muteBtn.style.display='none';
+    const total = hits+misses;
+    const accPct = total>0 ? Math.round((accSum/total)*100) : 100;
+    let stars = 1;
+    if (accPct>=95 && misses===0) stars=3;
+    else if (accPct>=80) stars=2;
+    else stars=1;
+    if (stars>bestStars[currentLevelIdx]) bestStars[currentLevelIdx]=stars;
+
+    resultsEyebrow.textContent = 'المستوى ' + (currentLevelIdx+1) + ' — ' + LEVELS[currentLevelIdx].name;
+    resultsTitle.textContent = accPct>=80 ? 'أشرقتِ ✦' : 'واصلي المحاولة';
+    rAcc.textContent = accPct+'%';
+    rMiss.textContent = misses;
+    rScore.textContent = score;
+    rStars.innerHTML = '★'.repeat(stars) + '<span class="dim">'+'★'.repeat(3-stars)+'</span>';
+    nextBtn.style.display = currentLevelIdx < LEVELS.length-1 ? 'inline-block' : 'none';
+    resultsOverlay.classList.remove('hidden');
+  }
+
+  backBtn.addEventListener('click', ()=>{
+    state='select';
+    resultsOverlay.classList.add('hidden');
+    buildLevelCards();
+    selectOverlay.classList.remove('hidden');
+  });
+  nextBtn.addEventListener('click', ()=> startLevel(currentLevelIdx+1));
+
+  window.addEventListener('keydown',(e)=>{
+    if (e.code==='Space'){ e.preventDefault(); attemptHit(); }
+  });
+  canvas.addEventListener('pointerdown', ()=> attemptHit());
+
+  // ---------- DRAW ----------
+  function drawBackdrop(){
+    ctx.clearRect(0,0,W,H);
+    const gateX=W*0.5, gateY=H*0.14;
+    const glow = ctx.createRadialGradient(gateX,gateY,4,gateX,gateY,130);
+    glow.addColorStop(0,'rgba(246,196,83,0.28)');
+    glow.addColorStop(1,'rgba(246,196,83,0)');
+    ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
+    bgStars.forEach(b=>{
+      b.tw+=0.02;
+      const a=0.35+Math.sin(b.tw)*0.3;
+      ctx.fillStyle=`rgba(234,230,255,${Math.max(a,0.12)})`;
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();
+    });
+  }
+
+  function drawReticle(){
+    const cx=W/2, cy=H/2, r=hitR();
+    ctx.save();
+    ctx.strokeStyle='rgba(246,196,83,0.7)';
+    ctx.lineWidth=2.5;
+    // corner brackets
+    const bl=22, off=r+16;
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sy])=>{
+      const bx=cx+sx*off, by=cy+sy*off;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - sy*bl);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(bx - sx*bl, by);
+      ctx.stroke();
+    });
+    // center hit circle
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(246,196,83,0.9)';
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx,cy,4,0,Math.PI*2);
+    ctx.fillStyle='rgba(246,196,83,0.9)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawNotes(){
+    const cx=W/2, cy=H/2, r=hitR();
+    const now=performance.now();
+    notes.forEach(n=>{
+      if (n.resolved) return;
+      const total = n.hitT - n.spawnT;
+      const frac = Math.min(Math.max((now-n.spawnT)/total,0),1);
+      const dist = spawnDist() * (1-frac);
+      const x = cx + Math.cos(n.angle)*dist;
+      const y = cy + Math.sin(n.angle)*dist;
+      // trailing streak
+      ctx.save();
+      ctx.strokeStyle='rgba(233,69,96,0.35)';
+      ctx.lineWidth=6;
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      ctx.lineTo(cx + Math.cos(n.angle)*(dist+26), cy + Math.sin(n.angle)*(dist+26));
+      ctx.stroke();
+      // note body
+      ctx.beginPath();
+      ctx.arc(x,y,10,0,Math.PI*2);
+      ctx.fillStyle='#e94560';
+      ctx.shadowColor='rgba(233,69,96,0.7)';
+      ctx.shadowBlur=10;
+      ctx.fill();
+      ctx.restore();
+
+      if (now > n.hitT + 220) resolveMiss(n);
+    });
+  }
+
+  let lastTs=null;
+  function loop(ts){
+    if (lastTs===null) lastTs=ts;
+    const dt = ts-lastTs; lastTs=ts;
+
+    drawBackdrop();
+
+    if (state==='playing'){
+      const lv = LEVELS[currentLevelIdx];
+      spawnTimer -= dt;
+      if (spawnTimer<=0 && spawnedCount<totalToSpawn){
+        spawnNote(lv);
+        spawnTimer = Math.max(lv.spawnGap - spawnedCount*6, lv.minGap) + (Math.random()*120-60);
       }
+      drawReticle();
+      drawNotes();
+    } else if (state==='select'){
+      drawReticle();
     }
+
+    requestAnimationFrame(loop);
   }
 
-  updateHUD();
-}
-
-function animate(){
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
-  if(running) update(dt);
-  renderer.render(scene, camera);
-}
-
-window.addEventListener('load', function(){
-  try{
-    init();
-    animate();
-  }catch(err){
-    console.error(err);
-    const s = document.getElementById('startScreen');
-    if(s) s.innerHTML = '<h1>تعذر تشغيل اللعبة</h1><div class="subtitle">' + (err && err.message ? err.message : 'خطأ غير معروف') + '</div>';
-  }
-});
-
+  initBgStars();
+  buildLevelCards();
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>
